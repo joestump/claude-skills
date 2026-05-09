@@ -1,0 +1,82 @@
+name: Release skill
+
+on:
+  push:
+    tags:
+      - "*-v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse skill name and version from tag
+        id: parse
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # Tag format: <skill-name>-v<MAJOR>.<MINOR>.<PATCH>
+          # Split on the last "-v" to allow skill names that contain hyphens.
+          if [[ ! "$tag" =~ ^(.+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "::error::Tag '$tag' does not match <skill-name>-v<MAJOR>.<MINOR>.<PATCH>"
+            exit 1
+          fi
+          skill="${BASH_REMATCH[1]}"
+          version="${BASH_REMATCH[2]}"
+          echo "skill=$skill" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Skill: $skill"
+          echo "Version: $version"
+
+      - name: Verify skill directory exists
+        run: |
+          skill="${{ steps.parse.outputs.skill }}"
+          if [ ! -d "$skill" ]; then
+            echo "::error::No directory '$skill' at repo root"
+            exit 1
+          fi
+          if [ ! -f "$skill/SKILL.md" ]; then
+            echo "::error::'$skill/SKILL.md' is missing — every skill must have one"
+            exit 1
+          fi
+
+      - name: Build skill zip
+        id: zip
+        run: |
+          skill="${{ steps.parse.outputs.skill }}"
+          out="${skill}.zip"
+          # Zip the skill directory at the root of the archive (so it unpacks
+          # into ~/.claude/skills/<skill>/ cleanly).
+          zip -r "$out" "$skill" \
+            -x "*.DS_Store" \
+            -x "$skill/*-workspace/*"
+          echo "path=$out" >> "$GITHUB_OUTPUT"
+          ls -lh "$out"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          skill="${{ steps.parse.outputs.skill }}"
+          version="${{ steps.parse.outputs.version }}"
+          tag="${GITHUB_REF_NAME}"
+          zip="${{ steps.zip.outputs.path }}"
+
+          notes_file="$(mktemp)"
+          cat > "$notes_file" <<EOF
+          \`${skill}\` v${version}
+
+          Install:
+
+          - **Claude.ai**: download \`${skill}.zip\`, then Settings → Capabilities → Skills → Upload.
+          - **Claude Code**: \`unzip ${skill}.zip -d ~/.claude/skills/\`
+          EOF
+
+          gh release create "$tag" "$zip" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "${skill} v${version}" \
+            --notes-file "$notes_file"
