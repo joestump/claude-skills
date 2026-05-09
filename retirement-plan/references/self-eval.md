@@ -1,8 +1,16 @@
 # Self-evaluation
 
-Run after every render. **Silent on clean runs** — no postmortem brag. File an issue only when something tripped, and mention it to the user **once per session**.
+Run after every render. **Silent on clean runs** — no postmortem brag.
 
-## Trip thresholds (any one → file an issue)
+If any threshold below tripped, delegate to the [`self-report`](../../self-report/SKILL.md) skill. Pass:
+
+- `skill-name`: `retirement-plan`
+- `title`: `[retirement-plan] <short symptom-first summary>`
+- `body`: built per [`self-report/references/issue-format.md`](../../self-report/references/issue-format.md), sanitized per [`self-report/references/privacy.md`](../../self-report/references/privacy.md)
+
+The `self-report` skill handles labels, the filing tier chain (GitHub MCP → `gh` → fallback), and the once-per-session user mention.
+
+## Trip thresholds (any one → file)
 
 ### Tool-call budget
 
@@ -12,7 +20,7 @@ Run after every render. **Silent on clean runs** — no postmortem brag. File an
 
 ### Code churn
 
-- **> 2 retries** fixing the same bug (template-literal escaping, calculation errors, styling regressions, etc.).
+- **> 2 retries** fixing the same bug (template-literal escaping, calculation errors, styling regressions).
 
 ### Material assumptions
 
@@ -36,63 +44,3 @@ Any of these in the rendered file:
 - "ugly"
 - "broken"
 - "fix this"
-
-## Issue format
-
-**Title:** `[retirement-plan] <short summary>`
-
-**Body:**
-
-```
-## Trigger condition
-<explicit invoke / project-name match / new doc / money event / staleness>
-
-## Run summary
-- Tool-call count: <n>
-- Render attempts: <n>
-- Phase reached: <discovery / gap / interview / render / self-eval>
-
-## What happened
-<1–3 concrete sentences>
-
-## Failure signals
-- [x/-] tool-call budget
-- [x/-] retry count
-- [x/-] material assumptions (>3)
-- [x/-] render integrity
-- [x/-] muted-color regression
-- [x/-] user pushback in same turn
-
-## Suggested fix
-<which file in the skill should change: SKILL.md, design-spec.md, interview-flow.md, template, etc.>
-
-## Run context (sanitized)
-<model, surface, trigger source — NO user data>
-```
-
-## Privacy
-
-The issue body **must never** contain:
-
-- User's name or partner's name
-- Account balances or net-worth figures
-- Income figures
-- Document filenames that include identifying info
-- Property addresses
-- Any direct quote from a user document
-
-Only meta-signals about how the run went.
-
-## Filing path
-
-1. **GitHub MCP available** → file directly via MCP tool. Repo: `joestump/claude-skills`. Label: `skill-self-report`.
-2. **`gh` CLI available** → run `scripts/file_issue.sh` which calls `gh issue create --repo joestump/claude-skills --label skill-self-report --body-file <path>`.
-3. **Neither** → script writes body to `$SKILL_ISSUE_OUT_DIR/skill-issue.md` (default `/mnt/user-data/outputs/skill-issue.md`) and prints a prefilled URL with `labels=skill-self-report&title=...` query params.
-
-## User-facing mention (fallback path only)
-
-Once per session, in plain prose:
-
-> I noticed friction in this run. I've written a self-report at `skill-issue.md` — paste it as a new issue at https://github.com/joestump/claude-skills/issues/new if you'd like to track it.
-
-Don't repeat. Don't nag. Don't surface clean runs.

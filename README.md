@@ -9,6 +9,7 @@ Skills are self-contained instruction packs that Claude loads on demand to handl
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
 | [`retirement-plan`](./retirement-plan) | Retirement-themed Claude Project, `/retirement-plan`, new financial documents, money events, or stale plan | Generates a high-fidelity, durable `retirement-plan.html` artifact from financial documents and lifestyle assumptions. |
+| [`self-report`](./self-report) | Invoked by another skill in this repo when its run trips its own thresholds, or `/self-report` | Files GitHub issues against this repo with per-skill labels (`skill:<name>`). Single owner of the filing path so other skills don't reimplement it. |
 
 ## Install
 
@@ -37,17 +38,23 @@ claude-skills/
 │       └── skill-self-report.md
 ├── LICENSE
 ├── README.md
-└── retirement-plan/
+├── retirement-plan/
+│   ├── README.md
+│   ├── SKILL.md
+│   ├── assets/
+│   └── references/
+└── self-report/
     ├── README.md
     ├── SKILL.md
-    ├── assets/
     ├── references/
     └── scripts/
 ```
 
 ## Self-reporting
 
-Several skills here will file a GitHub issue against this repo (label: `skill-self-report`) when a run hits friction — too many tool calls, repeated render bugs, material assumptions, or user pushback. These reports never include user data; they're meta-signals about how the run went, used to improve the skills over time.
+Skills here delegate to [`self-report`](./self-report) when a run hits friction — too many tool calls, repeated render bugs, material assumptions, or user pushback. It files an issue against this repo with `skill-self-report` plus a per-skill label (`skill:retirement-plan`, etc.) so you can filter the issues tab. If multiple skills tripped in one session, one issue per skill — never bundled.
+
+Reports never include user data; they're meta-signals about how the run went, used to improve the skills over time.
 
 ## License
 

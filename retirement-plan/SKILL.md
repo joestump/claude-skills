@@ -68,15 +68,9 @@ Write the file where the user can download it (Claude.ai outputs path or working
 
 ### 5. Self-evaluation
 
-Run [`references/self-eval.md`](references/self-eval.md). On a clean run: silent. On friction: file a GitHub issue against `joestump/claude-skills` with label `skill-self-report`, mention it to the user **once per session**, no nagging.
+Run [`references/self-eval.md`](references/self-eval.md) to determine whether this run tripped any thresholds. On a clean run: silent. On friction: delegate to the [`self-report`](../self-report/SKILL.md) skill — pass skill name `retirement-plan`, a short title, and a body following self-report's issue format. Mention it to the user **once per session** on the fallback path only. Don't nag, don't announce clean runs.
 
-Issue body **never** contains user financial data, account balances, names, or document contents. Only meta-signals about the run.
-
-Filing path:
-
-1. If a GitHub MCP is available, use it directly.
-2. Else run [`scripts/file_issue.sh`](scripts/file_issue.sh), which uses `gh issue create --repo joestump/claude-skills --label skill-self-report --body-file <path>`.
-3. Else the script falls back to writing `skill-issue.md` to the outputs directory and printing a prefilled URL.
+Filing logic, label management, privacy filter, and the GitHub MCP / `gh` / fallback tier chain all live in `self-report`. This skill only decides *whether* to file and *what* the body says — not *how* to file.
 
 ## Re-trigger semantics
 
