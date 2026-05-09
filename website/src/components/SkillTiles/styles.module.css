@@ -1,0 +1,82 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--ifm-background-surface-color);
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--ifm-font-color-base);
+  transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.tile:hover {
+  border-color: var(--ifm-color-primary);
+  text-decoration: none;
+  color: var(--ifm-font-color-base);
+  transform: translateY(-2px);
+}
+
+.tileHeader {
+  margin-bottom: 12px;
+}
+
+.tileLabel {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 4px;
+}
+
+.tileName {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  font-feature-settings: 'tnum';
+}
+
+.tileSummary {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ifm-color-emphasis-800);
+  margin: 0 0 16px;
+}
+
+.triggers {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.triggersLabel {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+  margin-bottom: 6px;
+}
+
+.triggerList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--ifm-color-emphasis-700);
+  line-height: 1.6;
+}
+
+.tileCta {
+  margin-top: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ifm-color-primary);
+}
