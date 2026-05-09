@@ -57,7 +57,7 @@ jobs:
           echo "path=$out" >> "$GITHUB_OUTPUT"
           ls -lh "$out"
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -65,6 +65,14 @@ jobs:
           version="${{ steps.parse.outputs.version }}"
           tag="${GITHUB_REF_NAME}"
           zip="${{ steps.zip.outputs.path }}"
+
+          # If a release already exists for this tag (e.g. created manually
+          # with hand-written notes), just attach the zip and exit.
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $tag already exists — uploading $zip and exiting."
+            gh release upload "$tag" "$zip" --repo "$GITHUB_REPOSITORY" --clobber
+            exit 0
+          fi
 
           notes_file="$(mktemp)"
           cat > "$notes_file" <<EOF
