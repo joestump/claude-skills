@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Retirement plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1a1915;--warm:#2c2921;--muted:#5c5850;--faint:#7a756b;
+  --bg:#f5f3ed;--card:#ffffff;--cream:#edeae2;
+  --accent:#b45309;--accent-light:#fef3c7;
+  --green:#166534;--green-bg:#dcfce7;
+  --red:#991b1b;--red-bg:#fee2e2;
+  --blue:#1e40af;--blue-bg:#dbeafe;
+  --brd:#d9d4c9;--brd-h:#c4bfb4;
+}
+@media(prefers-color-scheme:dark){:root{
+  --ink:#e7e5e4;--warm:#d6d3d1;--muted:#a8a29e;--faint:#78716c;
+  --bg:#1c1917;--card:#292524;--cream:#292524;
+  --accent:#f59e0b;--accent-light:#451a03;
+  --green:#4ade80;--green-bg:#14532d;
+  --red:#fca5a5;--red-bg:rgba(153,27,27,.25);
+  --blue:#93c5fd;--blue-bg:#1e3a5f;
+  --brd:#44403c;--brd-h:#57534e;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'DM Sans',sans-serif;font-weight:400;font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:720px;margin:0 auto;padding:32px 36px}
+.overline{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+h1{font-family:'DM Serif Display',serif;font-weight:400;font-size:38px;line-height:1.1;margin:0 0 8px}
+.subtitle{color:var(--muted);font-size:14px;margin:0 0 24px}
+h2{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;margin:24px 0 10px}
+h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:20px 0 8px}
+.scores{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.score{background:var(--card);border:1px solid var(--brd);border-radius:4px;padding:14px 16px}
+.score .l{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.score .v{font-size:22px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--brd);margin:8px 0 0}
+.tab{
+  background:none;border:0;padding:10px 0;cursor:pointer;
+  font-family:inherit;font-size:13px;color:var(--muted);
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+}
+.tab:hover{color:var(--warm)}
+.tab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.panel{display:none;animation:fadeUp 180ms ease-out}
+.panel.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tbl{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--brd);border-radius:4px;overflow:hidden;margin:12px 0}
+.tbl thead th{background:var(--cream);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:500;padding:10px 12px;text-align:left;border-bottom:.5px solid var(--brd)}
+.tbl tbody td{padding:10px 12px;border-bottom:.5px solid var(--brd);font-size:13px;font-variant-numeric:tabular-nums;color:var(--warm)}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl td.num,.tbl th.num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr.event td{background:var(--accent-light)}
+.tbl tr.flip td{background:var(--green-bg);color:var(--green);font-weight:500}
+.tbl tr.expandable{cursor:pointer}
+.tbl tr.detail td{background:var(--cream);font-size:12px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--brd);border-radius:4px;padding:18px 20px;margin:12px 0}
+.tri-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+.knobs{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;margin:12px 0}
+.knob{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:.5px solid var(--brd)}
+.knob label{font-size:12px;color:var(--muted)}
+.knob input,.knob select{
+  font-family:inherit;font-size:13px;color:var(--ink);
+  background:var(--card);border:1px solid var(--brd);border-radius:4px;
+  padding:6px 10px;min-width:110px;text-align:right;font-variant-numeric:tabular-nums;
+}
+.knob input:focus,.knob select:focus{outline:none;border-color:var(--brd-h)}
+.subtabs{display:flex;gap:18px;margin:14px 0 6px}
+.subtab{background:none;border:0;cursor:pointer;font-family:inherit;font-size:12px;color:var(--muted);padding:6px 0;border-bottom:1px solid transparent}
+.subtab.active{color:var(--ink);border-bottom-color:var(--accent)}
+.glossary{background:var(--cream);border-top:.5px solid var(--brd);padding:14px 16px;margin:0 0 16px;border-radius:0 0 4px 4px}
+.glossary-row{display:grid;grid-template-columns:140px 1fr;gap:10px;font-size:12px;padding:4px 0}
+.glossary-row .term{color:var(--ink);font-weight:500}
+.glossary-row .def{color:var(--muted)}
+.bottom-line{padding:16px 18px;border-radius:4px;margin:18px 0 8px;font-size:13px;line-height:1.6}
+.bottom-line.ok{background:var(--green-bg);color:var(--green)}
+.bottom-line.bad{background:var(--red-bg);color:var(--red)}
+.bottom-line .verdict{font-weight:600;display:block;margin-bottom:6px}
+.callout-warn{background:var(--accent-light);color:var(--accent);padding:10px 14px;border-radius:4px;font-size:12px;margin:10px 0}
+.chart{margin:14px 0;background:var(--card);border:1px solid var(--brd);border-radius:4px;padding:14px}
+.chart svg{display:block;width:100%;height:auto}
+.chart text{font-family:'DM Sans',sans-serif;font-size:10px;fill:var(--muted)}
+.chart .grid{stroke:var(--brd);stroke-width:.5}
+.chart .line-portfolio{stroke:var(--accent);stroke-width:1.5;fill:none}
+.chart .line-realestate{stroke:var(--blue);stroke-width:1.5;fill:none}
+.chart .line-networth{stroke:var(--ink);stroke-width:2;fill:none}
+.chart .crash{fill:var(--red)}
+.footer{margin-top:32px;padding-top:14px;border-top:1px solid var(--brd);font-size:11px;color:var(--faint);line-height:1.6}
+@media(max-width:640px){
+  .wrap{padding:20px 18px}
+  h1{font-size:30px}
+  .scores{grid-template-columns:1fr 1fr}
+  .tbl thead th,.tbl tbody td{padding:8px 10px;font-size:12px}
+  .tbl{table-layout:fixed}
+  .tbl col.year{width:70px}
+  .tbl col.income,.tbl col.spending{width:80px}
+  .tbl col.networth{width:90px}
+  .knobs{grid-template-columns:1fr}
+  .tri-grid{grid-template-columns:1fr}
+  .tabs{gap:14px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab{white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="overline">LAST UPDATED <!-- DATE --></div>
+  <h1><!-- USER FRAMING, e.g. "Retire by 50" --></h1>
+  <p class="subtitle"><!-- e.g. Age 46 · Target Mar 2030 · $125–150K/yr --></p>
+
+  <div class="scores">
+    <div class="score"><div class="l">Net worth</div><div class="v" id="score-nw">—</div></div>
+    <div class="score"><div class="l">Debt-free by</div><div class="v" id="score-df">—</div></div>
+    <div class="score"><div class="l">Big purchase ready</div><div class="v" id="score-bp">—</div></div>
+    <div class="score"><div class="l">Retirement income</div><div class="v" id="score-ri">—</div></div>
+  </div>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="execution" role="tab">Execution plan</button>
+    <button class="tab" data-tab="income" role="tab">Income reality</button>
+    <button class="tab" data-tab="purchases" role="tab">Big purchases</button>
+    <button class="tab" data-tab="retirement" role="tab">At retirement</button>
+    <button class="tab" data-tab="lifetime" role="tab">Lifetime projection</button>
+  </nav>
+
+  <section class="panel active" data-panel="execution">
+    <h2>Execution plan</h2>
+    <!-- 12–24 months of debt paydown, savings moves, milestones -->
+    <div class="bottom-line ok"><span class="verdict">✓ On track.</span><!-- 2–3 sentences --></div>
+  </section>
+
+  <section class="panel" data-panel="income">
+    <h2>Income reality</h2>
+    <!-- W-2, RSUs, rentals, side income table -->
+    <div class="bottom-line ok"><span class="verdict"></span></div>
+  </section>
+
+  <section class="panel" data-panel="purchases">
+    <h2>Big purchases</h2>
+    <!-- second home, vehicles, sabbaticals -->
+    <div class="bottom-line ok"><span class="verdict"></span></div>
+  </section>
+
+  <section class="panel" data-panel="retirement">
+    <h2>At retirement</h2>
+    <!-- snapshot at target retirement year -->
+    <div class="bottom-line ok"><span class="verdict"></span></div>
+  </section>
+
+  <section class="panel" data-panel="lifetime">
+    <h2>Lifetime projection</h2>
+
+    <div class="subtabs">
+      <button class="subtab active" data-subtab="timing">Income &amp; retirement timing</button>
+      <button class="subtab" data-subtab="spending">Spending &amp; lifestyle</button>
+    </div>
+
+    <div class="knobs" data-subpanel="timing">
+      <div class="knob"><label>Retirement age</label><input type="number" id="k-retire-age"></div>
+      <div class="knob"><label>Consulting days/yr</label><input type="number" id="k-cons-days"></div>
+      <div class="knob"><label>Consulting end age</label><input type="number" id="k-cons-end"></div>
+      <div class="knob"><label>His SS claim age</label><input type="number" id="k-ss-his"></div>
+      <div class="knob"><label>Spouse SS claim age</label><input type="number" id="k-ss-sp"></div>
+      <div class="knob"><label>Real return %</label><input type="number" step="0.1" id="k-return"></div>
+      <div class="knob"><label>Real RE appreciation %</label><input type="number" step="0.1" id="k-re"></div>
+      <div class="knob"><label>Inflation %</label><input type="number" step="0.1" id="k-infl"></div>
+      <div class="knob"><label>Pension drawdown start age</label><input type="number" id="k-pen"></div>
+      <div class="knob"><label>Property sale years</label><input type="text" id="k-sale" placeholder="e.g. 2032,2038"></div>
+    </div>
+
+    <div class="knobs" data-subpanel="spending" style="display:none">
+      <div class="knob"><label>Base annual spending</label><input type="number" id="k-spend"></div>
+      <div class="knob"><label>Healthcare cost/yr</label><input type="number" id="k-hc"></div>
+      <div class="knob"><label>Vacation budget/yr</label><input type="number" id="k-vac"></div>
+      <div class="knob"><label>Car replacement (yrs)</label><input type="number" id="k-car-yrs"></div>
+      <div class="knob"><label>Car cost</label><input type="number" id="k-car-$"></div>
+      <div class="knob"><label>Second home year</label><input type="number" id="k-2h-yr"></div>
+      <div class="knob"><label>Second home cost</label><input type="number" id="k-2h-$"></div>
+      <div class="knob"><label>Lifestyle creep %/yr</label><input type="number" step="0.1" id="k-creep"></div>
+      <div class="knob"><label>Crash every (yrs)</label><input type="number" id="k-crash-yrs"></div>
+      <div class="knob"><label>Crash drop %</label><input type="number" id="k-crash-pct"></div>
+    </div>
+
+    <div class="chart">
+      <svg viewBox="0 0 640 220" preserveAspectRatio="xMidYMid meet" id="lifetime-chart">
+        <!-- gridlines, axes, lines drawn at render -->
+      </svg>
+    </div>
+
+    <table class="tbl" id="projection-table">
+      <colgroup>
+        <col class="year"><col><col class="income"><col class="spending"><col><col class="networth">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Year</th><th>Age</th>
+          <th class="num">Income</th><th class="num">Spending</th>
+          <th class="num">Net</th><th class="num">Net worth</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- year rows + milestone strips injected at render -->
+      </tbody>
+    </table>
+
+    <div class="glossary">
+      <div class="glossary-row"><div class="term">Income</div><div class="def">All inflows for the year — wages, consulting, rentals, pension, SS.</div></div>
+      <div class="glossary-row"><div class="term">Spending</div><div class="def">Base + healthcare + vacation + lifestyle creep + scheduled big purchases.</div></div>
+      <div class="glossary-row"><div class="term">Net</div><div class="def">Income − spending. Negative means drawing from portfolio.</div></div>
+      <div class="glossary-row"><div class="term">Net worth</div><div class="def">Portfolio + real estate equity at year end, real (today's) dollars.</div></div>
+    </div>
+
+    <div class="bottom-line ok" id="lifetime-verdict"><span class="verdict"></span></div>
+  </section>
+
+  <div class="footer">
+    <!-- methodology links, document recency note -->
+    Not financial advice.
+  </div>
+
+</div>
+
+<script>
+// ---- STATE ----
+// Replace this block with the user's actual numbers.
+const STATE = {
+  asOf: null,           // ISO date
+  ages: {user:null, spouse:null},
+  framing: "",
+  income: {},
+  assets: {},
+  liabilities: {},
+  spending: {},
+  realestate: [],
+  ss: {},
+  events: [],
+  knobs: {
+    retireAge: null, consDays: null, consEnd: null,
+    ssHis: null, ssSpouse: null,
+    realReturn: 5, realRE: 1, inflation: 3,
+    pensionStart: null, saleYears: [],
+    baseSpend: null, healthcare: null, vacation: null,
+    carYrs: 8, carCost: 40000,
+    secondHomeYear: null, secondHomeCost: null,
+    creep: 1.5, crashYrs: 10, crashPct: 25,
+  },
+  projection: [],       // [{year, age, income, spending, net, networth, milestone?}]
+};
+
+// ---- FORMATTING ----
+const fmt = n => {
+  if (n == null) return "—";
+  const neg = n < 0, abs = Math.abs(n);
+  const s = abs >= 1e6 ? `$${(abs/1e6).toFixed(2)}M`
+          : abs >= 1e3 ? `$${Math.round(abs).toLocaleString()}`
+          : `$${Math.round(abs)}`;
+  return neg ? `(${s})` : s;
+};
+
+// ---- TABS ----
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+// ---- SUBTABS ----
+function switchSubtab(name) {
+  document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.subtab === name));
+  document.querySelectorAll('[data-subpanel]').forEach(p => {
+    p.style.display = p.dataset.subpanel === name ? '' : 'none';
+  });
+}
+document.querySelectorAll('.subtab').forEach(t => t.addEventListener('click', () => switchSubtab(t.dataset.subtab)));
+
+// ---- EXPANDABLE EVENT ROWS ----
+document.addEventListener('click', e => {
+  const tr = e.target.closest('tr.expandable');
+  if (!tr) return;
+  const detail = tr.nextElementSibling;
+  if (detail && detail.classList.contains('detail')) {
+    detail.style.display = detail.style.display === 'none' ? '' : 'none';
+  }
+});
+
+// ---- RENDER ----
+// render() reads STATE, populates score row, tables, and the SVG chart.
+// Implemented per-build to fit the user's actual data shape.
+function render() {
+  // populate scores, tables, chart from STATE here
+}
+render();
+</script>
+</body>
+</html>
