@@ -9,6 +9,7 @@ const sidebars = {
       label: 'Skills',
       collapsed: false,
       items: [
+        'gemini-mockup',
         'retirement-plan',
         'self-report',
       ],
