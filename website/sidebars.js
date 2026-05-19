@@ -10,6 +10,7 @@ const sidebars = {
       collapsed: false,
       items: [
         'gemini-mockup',
+        'refresh-miatrix-token',
         'retirement-plan',
         'self-report',
       ],
