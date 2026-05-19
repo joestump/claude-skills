@@ -6,9 +6,8 @@ description: >
   whenever Miatrix keeps re-downloading the same episodes or shows, when
   Prowlarr reports Miatrix indexer errors or failures, or when a Miatrix API
   key rotation is suspected. The skill handles the full workflow automatically:
-  reads credentials from OpenBao, logs into Miatrix, grabs the API key from
-  the profile page, and updates Prowlarr's indexer config — no manual steps
-  required.
+  gathers credentials, logs into Miatrix, grabs the API key from the profile
+  page, and updates Prowlarr's indexer config — no manual steps required.
 ---
 
 # Refresh Miatrix Token
@@ -18,69 +17,64 @@ rotation. When Miatrix rotates its keys, Prowlarr's cached key goes stale
 and Miatrix starts returning duplicate or incorrect results — causing the Arr
 stack to re-queue already-downloaded episodes.
 
-## Step 1: Read credentials from OpenBao
+## Step 1: Gather required credentials
 
-Use the machine token at `/run/vault-agent/token`. The AppRole policy doesn't
-allow `sys/internal/ui/mounts`, so use the raw API — not `bao kv get`:
+You need four values before proceeding:
 
+| Variable | Description |
+|----------|-------------|
+| `MIATRIX_USER` | Miatrix username or email |
+| `MIATRIX_PASS` | Miatrix password |
+| `PROWLARR_URL` | Base URL of the Prowlarr instance (e.g. `https://prowlarr.example.com`) |
+| `PROWLARR_KEY` | Prowlarr API key (Settings → General → API Key) |
+
+Resolve them in this order of preference:
+
+1. **Already set in the environment** — check with `env | grep -E 'MIATRIX|PROWLARR'`
+2. **Secrets manager** — read from whatever the project uses (Vault/OpenBao,
+   1Password CLI, Bitwarden CLI, `pass`, etc.). The project's `CLAUDE.md` or
+   `.env.example` usually documents the path.
+3. **Ask the user** — if credentials are not findable, ask for them directly.
+   Never guess or construct them.
+
+Once resolved, assign them:
 ```bash
-MACHINE_TOKEN=$(cat /run/vault-agent/token)
-
-# Fetch Miatrix creds
-_vault_users=$(curl -s \
-  -H "X-Vault-Token: $MACHINE_TOKEN" \
-  https://vault.stump.rocks/v1/secret/data/users/joestump)
-
-MIATRIX_USER=$(echo "$_vault_users" | python3 -c \
-  "import sys,json; d=json.load(sys.stdin); print(d['data']['data']['MIATRIX_USER'])")
-MIATRIX_PASS=$(echo "$_vault_users" | python3 -c \
-  "import sys,json; d=json.load(sys.stdin); print(d['data']['data']['MIATRIX_PASS'])")
-unset _vault_users
-
-# Fetch Prowlarr API key
-PROWLARR_KEY=$(curl -s \
-  -H "X-Vault-Token: $MACHINE_TOKEN" \
-  https://vault.stump.rocks/v1/secret/data/ie01/arr \
-  | python3 -c \
-  "import sys,json; d=json.load(sys.stdin); print(d['data']['data']['prowlarr_api_key'])")
+MIATRIX_USER="<value>"
+MIATRIX_PASS="<value>"
+PROWLARR_URL="<value>"   # no trailing slash
+PROWLARR_KEY="<value>"
 ```
 
-Never log, echo, or display credential values. If either fetch returns empty
-or an error object, stop and report which vault path failed.
+Never log, echo, or display credential values. If any value cannot be
+resolved, stop and report which one is missing.
 
 ## Step 2: Log into Miatrix via Chrome DevTools
 
-Use `mcp__chrome-devtools__new_page` to open a fresh tab, then navigate to
-the login page.
+Open a fresh browser tab and navigate to the login page.
 
 ```
 new_page → get the page_id
 navigate_page(page_id, "https://miatrix.com/login")
-wait_for(page_id, "networkidle" or selector for the login form)
-```
-
-Take a snapshot to understand the page layout:
-```
+wait_for(page_id, ["Login", "Username", "Email", "Password"])
 take_snapshot(page_id)
 ```
 
-Fill in the credentials and submit. Common selector patterns for login forms:
-- Username: `input[type="email"]`, `input[name="username"]`, `input[name="email"]`, `#username`, `#email`
+Fill in the credentials and submit. Common selector patterns for the form:
+- Username/Email: `input[name="username"]`, `input[type="email"]`, `#username`, `#email`
 - Password: `input[type="password"]`
-- Submit: `button[type="submit"]`, `input[type="submit"]`, `button:contains("Login")`, `button:contains("Sign in")`
+- Submit: `button[type="submit"]`, `input[type="submit"]`
 
 ```
 fill(page_id, <username_selector>, MIATRIX_USER)
-fill(page_id, "input[type='password']", MIATRIX_PASS)
+fill(page_id, <password_selector>, MIATRIX_PASS)
 click(page_id, <submit_selector>)
-wait_for(page_id, "networkidle")
+wait_for(page_id, ["networkidle", "Dashboard", "Profile", "Welcome"])
 ```
 
-After clicking, verify login succeeded by checking the current URL — it should
-no longer be `/login`. If still on the login page, or an error message is
-visible in the snapshot, **stop immediately** and report:
-> "Miatrix login failed — verify MIATRIX_USER and MIATRIX_PASS in OpenBao at
-> `secret/data/users/joestump`"
+Verify login succeeded: the URL should no longer be `/login` and a snapshot
+should show the user's account name or a dashboard, not an error message. If
+still on the login page, **stop immediately** and report:
+> "Miatrix login failed — verify MIATRIX_USER and MIATRIX_PASS"
 
 Do not retry with modified credentials.
 
@@ -88,32 +82,26 @@ Do not retry with modified credentials.
 
 ```
 navigate_page(page_id, "https://miatrix.com/profile")
-wait_for(page_id, "networkidle")
+wait_for(page_id, ["networkidle", "API", "Key", "Token"])
 take_snapshot(page_id)
 ```
 
-The API key is typically displayed as a visible text value or in a readonly
-input. Try extracting it with `evaluate_script`:
+The API key is visible as a text value or readonly input labelled "Site
+Api/Rss Key" or similar. Try extracting it with `evaluate_script`:
 
 ```javascript
-// Try multiple common patterns
 (function() {
   const selectors = [
-    'input[name*="api"]',
-    'input[id*="api"]',
-    'input[name*="key"]',
-    'input[id*="key"]',
+    'input[name*="api"]', 'input[id*="api"]',
+    'input[name*="key"]', 'input[id*="key"]',
     'input[name*="token"]',
-    '.api-key',
-    '.apikey',
-    '[data-apikey]',
-    '[data-api-key]',
+    '.api-key', '.apikey', '[data-apikey]', '[data-api-key]',
   ];
   for (const sel of selectors) {
     const el = document.querySelector(sel);
     if (el) return el.value || el.textContent.trim();
   }
-  // Fall back: look for a code block or pre containing a plausible API key
+  // Fall back: scan code/pre blocks for a plausible API key string
   for (const el of document.querySelectorAll('code, pre, .token, .key')) {
     const text = el.textContent.trim();
     if (text.length > 16 && /^[a-zA-Z0-9_\-]+$/.test(text)) return text;
@@ -122,15 +110,12 @@ input. Try extracting it with `evaluate_script`:
 })()
 ```
 
-If the script returns null, read the snapshot carefully — the key may be in
-a button-revealed modal or a "copy" widget. Try `click`ing a "Show" or
-"Reveal" button first, then re-evaluate.
+If the script returns null, read the snapshot — the key may be in a
+button-revealed modal or "copy" widget. Click a "Show" or "Reveal" button
+first, then re-evaluate. If you still cannot extract it, take a screenshot
+and report the page structure so the selector can be updated.
 
-Store the result as `NEW_API_KEY`. If you cannot extract it, take a screenshot
-with `take_screenshot(page_id)` and report the page structure so the selector
-can be updated.
-
-Close the browser tab when done:
+Store the result as `NEW_API_KEY`. Close the browser tab when done:
 ```
 close_page(page_id)
 ```
@@ -140,7 +125,7 @@ close_page(page_id)
 Find the Miatrix indexer(s):
 ```bash
 curl -s -H "X-Api-Key: $PROWLARR_KEY" \
-  https://prowlarr.stump.rocks/api/v1/indexer \
+  "$PROWLARR_URL/api/v1/indexer" \
   | python3 -c "
 import sys, json
 indexers = json.load(sys.stdin)
@@ -155,18 +140,16 @@ for i in indexers:
 If no indexer is found, list all indexer names and report — the name in
 Prowlarr may differ from "Miatrix".
 
-For each Miatrix indexer found, GET the full config, update the API key field,
-and PUT it back. The field is usually named `apiKey`, `key`, `api_key`, or
-`passkey` inside the `fields` array. Use temp files to avoid shell pipeline
-issues with Python env var injection:
+For each Miatrix indexer found, GET the full config, patch the API key field,
+and PUT it back. Use temp files to keep the shell pipeline simple:
 
 ```bash
 # GET full config
 curl -s -H "X-Api-Key: $PROWLARR_KEY" \
-  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID \
+  "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID" \
   > /tmp/prowlarr_indexer.json
 
-# Patch the API key field
+# Patch the apiKey field (commonly named apiKey, key, api_key, passkey, or token)
 python3 - <<PYEOF > /tmp/prowlarr_patched.json
 import json, sys
 
@@ -195,7 +178,7 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "X-Api-Key: $PROWLARR_KEY" \
   -H "Content-Type: application/json" \
   -d @/tmp/prowlarr_patched.json \
-  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID)
+  "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID")
 
 rm -f /tmp/prowlarr_indexer.json /tmp/prowlarr_patched.json
 echo "Prowlarr responded: $HTTP_STATUS"
@@ -207,19 +190,19 @@ with the correct field name.
 
 ## Step 5: Verify and report
 
-Optionally test the updated indexer (use the per-indexer endpoint, not
-`testall`, to avoid noise from other indexers):
+Test the updated indexer directly:
 ```bash
 curl -s -X POST \
   -H "X-Api-Key: $PROWLARR_KEY" \
-  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID/test
+  "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID/test"
 ```
 
 Report the outcome clearly:
 ```
 ✓ Retrieved new Miatrix API key from https://miatrix.com/profile
-✓ Updated Prowlarr indexer "<name>" (ID: N)
-  → Prowlarr responded: 200 OK
+✓ Updated Prowlarr indexer "<name>" (ID: N) at <PROWLARR_URL>
+  → Prowlarr responded: 202
+  → Indexer test: passed
 ```
 
 On any failure, state the exact step that failed and the error. Do not
