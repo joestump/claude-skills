@@ -8,6 +8,9 @@ description: >
   key rotation is suspected. The skill handles the full workflow automatically:
   gathers credentials, logs into Miatrix, grabs the API key from the profile
   page, and updates Prowlarr's indexer config — no manual steps required.
+category: Media
+tags: [prowlarr, miatrix, usenet, arr, indexer]
+status: stable
 ---
 
 # Refresh Miatrix Token
@@ -31,10 +34,18 @@ You need four values before proceeding:
 Resolve them in this order of preference:
 
 1. **Already set in the environment** — check with `env | grep -E 'MIATRIX|PROWLARR'`
-2. **Secrets manager** — read from whatever the project uses (Vault/OpenBao,
-   1Password CLI, Bitwarden CLI, `pass`, etc.). The project's `CLAUDE.md` or
-   `.env.example` usually documents the path.
-3. **Ask the user** — if credentials are not findable, ask for them directly.
+2. **OpenBao / Vault** — if `/run/vault-agent/token` exists, use it:
+   ```bash
+   export VAULT_TOKEN=$(cat /run/vault-agent/token)
+   # Path varies by project — check CLAUDE.md or .env.example for the kv path
+   bao kv get -field=username secret/services/miatrix   # example
+   bao kv get -field=password secret/services/miatrix
+   bao kv get -field=api_key  secret/services/prowlarr
+   ```
+   If the machine token file doesn't exist, try `BAO_TOKEN` / `VAULT_TOKEN` env vars.
+3. **Other secrets manager** — 1Password CLI, Bitwarden CLI, `pass`, etc. Check
+   the project's `CLAUDE.md` or `.env.example` for the path.
+4. **Ask the user** — if credentials are not findable, ask for them directly.
    Never guess or construct them.
 
 Once resolved, assign them:
@@ -144,19 +155,23 @@ For each Miatrix indexer found, GET the full config, patch the API key field,
 and PUT it back. Use temp files to keep the shell pipeline simple:
 
 ```bash
+# Clean up temp files on exit (even on error)
+trap 'rm -f /tmp/prowlarr_indexer.json /tmp/prowlarr_patched.json' EXIT
+
 # GET full config
-curl -s -H "X-Api-Key: $PROWLARR_KEY" \
+curl -sf -H "X-Api-Key: $PROWLARR_KEY" \
   "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID" \
   > /tmp/prowlarr_indexer.json
 
 # Patch the apiKey field (commonly named apiKey, key, api_key, passkey, or token)
-python3 - <<PYEOF > /tmp/prowlarr_patched.json
+# Single-quoted PYEOF suppresses shell expansion; key passed as argv[1] to avoid injection
+python3 - "$NEW_API_KEY" <<'PYEOF' > /tmp/prowlarr_patched.json
 import json, sys
 
 with open('/tmp/prowlarr_indexer.json') as f:
     data = json.load(f)
 
-new_key = "$NEW_API_KEY"
+new_key = sys.argv[1]
 key_fields = {'apiKey', 'key', 'api_key', 'passkey', 'apikey', 'token'}
 updated = False
 for field in data.get('fields', []):
@@ -180,7 +195,6 @@ HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
   -d @/tmp/prowlarr_patched.json \
   "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID")
 
-rm -f /tmp/prowlarr_indexer.json /tmp/prowlarr_patched.json
 echo "Prowlarr responded: $HTTP_STATUS"
 ```
 
@@ -190,11 +204,12 @@ with the correct field name.
 
 ## Step 5: Verify and report
 
-Test the updated indexer directly:
+Test the updated indexer directly and check `isValid`:
 ```bash
-curl -s -X POST \
+curl -sf -X POST \
   -H "X-Api-Key: $PROWLARR_KEY" \
-  "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID/test"
+  "$PROWLARR_URL/api/v1/indexer/$INDEXER_ID/test" \
+  | python3 -c "import sys,json; r=json.load(sys.stdin); print('isValid:', r.get('isValid', r))"
 ```
 
 Report the outcome clearly:
