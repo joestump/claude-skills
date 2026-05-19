@@ -31,16 +31,6 @@ const config = {
     locales: ['en'],
   },
 
-  plugins: [
-    [
-      'plugin-content-claude-plugin-skills',
-      {
-        // Scan the repo root (parent of website/) for skill directories
-        skillsDirs: ['..'],
-      },
-    ],
-  ],
-
   presets: [
     [
       'classic',
