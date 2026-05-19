@@ -31,6 +31,15 @@ const config = {
     locales: ['en'],
   },
 
+  plugins: [
+    [
+      'plugin-content-claude-plugin-skills',
+      {
+        skillsDirs: ['..'],
+      },
+    ],
+  ],
+
   presets: [
     [
       'classic',
