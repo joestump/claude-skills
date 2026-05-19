@@ -27,7 +27,7 @@ allow `sys/internal/ui/mounts`, so use the raw API — not `bao kv get`:
 MACHINE_TOKEN=$(cat /run/vault-agent/token)
 
 # Fetch Miatrix creds
-_vault_users=$(curl -sk \
+_vault_users=$(curl -s \
   -H "X-Vault-Token: $MACHINE_TOKEN" \
   https://vault.stump.rocks/v1/secret/data/users/joestump)
 
@@ -35,9 +35,10 @@ MIATRIX_USER=$(echo "$_vault_users" | python3 -c \
   "import sys,json; d=json.load(sys.stdin); print(d['data']['data']['MIATRIX_USER'])")
 MIATRIX_PASS=$(echo "$_vault_users" | python3 -c \
   "import sys,json; d=json.load(sys.stdin); print(d['data']['data']['MIATRIX_PASS'])")
+unset _vault_users
 
 # Fetch Prowlarr API key
-PROWLARR_KEY=$(curl -sk \
+PROWLARR_KEY=$(curl -s \
   -H "X-Vault-Token: $MACHINE_TOKEN" \
   https://vault.stump.rocks/v1/secret/data/ie01/arr \
   | python3 -c \
@@ -156,18 +157,23 @@ Prowlarr may differ from "Miatrix".
 
 For each Miatrix indexer found, GET the full config, update the API key field,
 and PUT it back. The field is usually named `apiKey`, `key`, `api_key`, or
-`passkey` inside the `fields` array:
+`passkey` inside the `fields` array. Use temp files to avoid shell pipeline
+issues with Python env var injection:
 
 ```bash
 # GET full config
-INDEXER_JSON=$(curl -s -H "X-Api-Key: $PROWLARR_KEY" \
-  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID)
+curl -s -H "X-Api-Key: $PROWLARR_KEY" \
+  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID \
+  > /tmp/prowlarr_indexer.json
 
-# Patch the API key field and PUT back
-echo "$INDEXER_JSON" | python3 -c "
-import sys, json, os
-data = json.load(sys.stdin)
-new_key = os.environ['NEW_API_KEY']
+# Patch the API key field
+python3 - <<PYEOF > /tmp/prowlarr_patched.json
+import json, sys
+
+with open('/tmp/prowlarr_indexer.json') as f:
+    data = json.load(f)
+
+new_key = "$NEW_API_KEY"
 key_fields = {'apiKey', 'key', 'api_key', 'passkey', 'apikey', 'token'}
 updated = False
 for field in data.get('fields', []):
@@ -176,32 +182,37 @@ for field in data.get('fields', []):
         updated = True
         break
 if not updated:
-    # Print field names so we can identify the right one
-    import sys
     print('Available fields:', [f['name'] for f in data.get('fields', [])], file=sys.stderr)
     sys.exit(1)
-print(json.dumps(data))
-" NEW_API_KEY="$NEW_API_KEY" | curl -s -o /tmp/prowlarr_update_response.json -w "%{http_code}" \
+
+with open('/tmp/prowlarr_patched.json', 'w') as out:
+    json.dump(data, out)
+PYEOF
+
+# PUT back and capture HTTP status
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
   -X PUT \
   -H "X-Api-Key: $PROWLARR_KEY" \
   -H "Content-Type: application/json" \
-  -d @- \
-  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID
+  -d @/tmp/prowlarr_patched.json \
+  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID)
+
+rm -f /tmp/prowlarr_indexer.json /tmp/prowlarr_patched.json
+echo "Prowlarr responded: $HTTP_STATUS"
 ```
 
-A 200 or 202 response means success. If the Python script exits with error
+A `200` or `202` response means success. If the Python script exits with error
 (field not found), print the available field names so the skill can be updated
 with the correct field name.
 
 ## Step 5: Verify and report
 
-Optionally test the updated indexer:
+Optionally test the updated indexer (use the per-indexer endpoint, not
+`testall`, to avoid noise from other indexers):
 ```bash
 curl -s -X POST \
   -H "X-Api-Key: $PROWLARR_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"id\": $INDEXER_ID}" \
-  https://prowlarr.stump.rocks/api/v1/indexer/testall
+  https://prowlarr.stump.rocks/api/v1/indexer/$INDEXER_ID/test
 ```
 
 Report the outcome clearly:
