@@ -1,0 +1,13 @@
+{
+  "name": "claude-skills",
+  "version": "1.0.0",
+  "description": "A collection of reusable Claude skills by Joe Stump.",
+  "author": "Joe Stump",
+  "skills": [
+    "./gemini-mockup",
+    "./refresh-miatrix-token",
+    "./retirement-plan",
+    "./self-report",
+    "./outline-runbook-curator"
+  ]
+}

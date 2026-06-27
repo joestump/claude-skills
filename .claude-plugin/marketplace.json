@@ -1,0 +1,15 @@
+{
+  "name": "joestump",
+  "owner": {
+    "name": "Joe Stump",
+    "email": "joe@stump.rocks"
+  },
+  "plugins": [
+    {
+      "name": "claude-skills",
+      "source": ".",
+      "description": "Joe Stump's personal Claude skills: gemini-mockup, refresh-miatrix-token, retirement-plan, self-report, outline-runbook-curator.",
+      "version": "1.0.0"
+    }
+  ]
+}
