@@ -8,6 +8,7 @@ Skills are self-contained instruction packs that Claude loads on demand to handl
 
 | Skill | Trigger | What it does |
 |-------|---------|--------------|
+| [`cut-release`](./cut-release) | "cut a release", "tag a release", "ship it", after a merge to main, `/cut-release` | Cuts a GitHub or Gitea/Forgejo **Release** (notes + assets on top of a tag, not just the tag). Auto-discovers the forge from the git remote, verifies CI is green on the merge commit, computes the next semver tag from the repo's convention, then tags and publishes the release. |
 | [`gemini-mockup`](./gemini-mockup) | `/gemini-mockup` or when user asks for UI mockups | Generates high-fidelity UI mockup PNGs using Gemini's image model via LiteLLM. Reads visual identity from project `CLAUDE.md`, frames output in macOS Safari chrome, auto-detects and updates stale mockups. |
 | [`refresh-miatrix-token`](./refresh-miatrix-token) | Miatrix re-downloading same shows, Prowlarr Miatrix indexer errors, `/refresh-miatrix-token` | Logs into Miatrix via browser automation, extracts the current API key, and updates Prowlarr's indexer config — fixes the "re-downloading" symptom from key rotation. |
 | [`retirement-plan`](./retirement-plan) | Retirement-themed Claude Project, `/retirement-plan`, new financial documents, money events, or stale plan | Generates a high-fidelity, durable `retirement-plan.html` artifact from financial documents and lifestyle assumptions. |
@@ -41,6 +42,14 @@ claude-skills/
 │       └── skill-self-report.md
 ├── LICENSE
 ├── README.md
+├── cut-release/
+│   ├── SKILL.md
+│   ├── references/
+│   │   ├── github.md
+│   │   ├── gitea.md
+│   │   └── versioning.md
+│   └── scripts/
+│       └── detect-forge.sh
 ├── gemini-mockup/
 │   ├── SKILL.md
 │   ├── references/
