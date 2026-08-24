@@ -8,7 +8,7 @@
     {
       "name": "claude-skills",
       "source": ".",
-      "description": "Joe Stump's personal Claude skills: cut-release, gemini-mockup, refresh-miatrix-token, retirement-plan, self-report, outline-runbook-curator.",
+      "description": "Joe Stump's personal Claude skills: cut-release, gemini-mockup, refresh-miatrix-token, retirement-plan, self-report, outline-runbook-curator, pr-sweep.",
       "version": "1.0.0"
     }
   ]
