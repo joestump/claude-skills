@@ -1,11 +1,11 @@
 ---
 name: outline-runbook-curator
 description: >
-  Curate, consolidate, and restyle the StumpCloud Runbooks wiki in Outline
-  (outline.stump.rocks) against the repo as source of truth. Use this skill whenever the user
-  wants to review/clean up the wiki, consolidate or reorganize runbooks, fix stale or duplicated
-  docs, reconcile Outline against the repo (ADRs, inventory, docs/), restructure the doc tree
-  into hierarchy-native nodes, or apply the domain color + topical icon scheme to wiki nodes.
+  Curate, consolidate, and restyle the StumpCloud Runbooks wiki in Outline against the repo as
+  source of truth. Use this skill whenever the user wants to review/clean up the wiki, consolidate
+  or reorganize runbooks, fix stale or duplicated docs, reconcile Outline against the repo (ADRs,
+  inventory, docs/), restructure the doc tree into hierarchy-native nodes, or apply the domain
+  color + topical icon scheme to wiki nodes.
   Trigger on phrases like "audit the runbooks", "clean up the wiki", "consolidate the Outline
   docs", "the wiki is out of date", "reorganize/restyle the Runbooks collection", or "color and
   icon the docs". This is the governance/curation counterpart to the `stumpcloud-omg` skill

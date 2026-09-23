@@ -23,7 +23,7 @@ at least `write:repository` scope. API auth header: `Authorization: token <TOKEN
 (note: `token`, not `Bearer`).
 
 ```bash
-GITEA="$API_BASE"          # e.g. https://gitea.stump.rocks/api/v1
+GITEA="$API_BASE"          # e.g. https://gitea.example.com/api/v1
 AUTH="Authorization: token $GITEA_TOKEN"
 ```
 
