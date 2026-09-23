@@ -38,7 +38,7 @@ re-flag what's already correctly marked historical.
 | Was | Now | Authority |
 |-----|-----|-----------|
 | PDX site hosts `ext01`, `gpu01`, `int01`, `media01`, `nuc02` | decommissioned; `nuc01` only survivor | ADR-0024 |
-| Authentik (`id.stump.wtf`) | Pocket ID v2 (`identity.stump.rocks`) + oauth2-proxy | ADR-0018 |
+| Authentik | Pocket ID v2 + oauth2-proxy | ADR-0018 |
 | MinIO | Garage S3 (tiered multi-site) | ADR-0008, ADR-0025 |
 | Infisical | OpenBao (3-node HA Raft) | ADR-0017, ADR-0026, ADR-0027 |
 | TubeSync | Pinchflat (on `ie01`) | (Arr Clients runbook) |
