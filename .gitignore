@@ -16,3 +16,6 @@ venv/
 
 # Node
 node_modules/
+
+# Claude Code session state and worktrees
+.claude/
