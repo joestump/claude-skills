@@ -17,60 +17,37 @@
 
 ## Repo-wins reconciliation
 
-The repo at `/Users/joestump/src/stumpcloud/infra` is ground truth:
+The infrastructure repo is ground truth. Ask the user for its checkout path if it isn't already
+in context -- don't assume one:
 
 - `docs/adrs/ADR-XXXX-*.md` -- the ADRs runbooks cite. **Verify every citation against the actual
   file** before trusting an Outline claim.
 - `decisions/` -- base decisions (node management, service role, inventory source of truth).
-- inventory: `dub.yaml` (Dublin / `.stump.rocks`), `dtw.yaml` (Detroit / `.stump.wtf`), `pdx.yaml`
-  (Portland-Vancouver / `.stump.wtf`); `roles/` for host/service facts.
+- the per-site inventory files (one per site, each mapping hosts to the services they run), plus
+  `roles/`, for host/service facts.
 - `docs/guides/`, `docs/apps/`, `docs-site/` -- user-facing/narrative material that may belong in
   the wiki but isn't there yet.
 
 When repo and Outline disagree, **fix Outline**. Don't delete history -- tombstone with a dated
 `:::warning` "retired / replaced by ..." callout, and move retired apps under `Deprecated`.
 
-## Known stale-reference watchlist (as of 2026-06)
+## Handling stale references
 
-These migrations are done; in Outline they should already be tombstoned. Verify they are; don't
-re-flag what's already correctly marked historical.
+Migrations leave the wiki describing a world that no longer exists. Treat every such reference as
+a question for the repo, not a fact of its own:
 
-| Was | Now | Authority |
-|-----|-----|-----------|
-| PDX site hosts `ext01`, `gpu01`, `int01`, `media01`, `nuc02` | decommissioned; `nuc01` only survivor | ADR-0024 |
-| Authentik | Pocket ID v2 + oauth2-proxy | ADR-0018 |
-| MinIO | Garage S3 (tiered multi-site) | ADR-0008, ADR-0025 |
-| Infisical | OpenBao (3-node HA Raft) | ADR-0017, ADR-0026, ADR-0027 |
-| TubeSync | Pinchflat (on `ie01`) | (Arr Clients runbook) |
-| TrueNAS | Proxmox VE + plain ZFS pools (`voltron`/`tank`/`critical`) | ADR-0021 |
+- **Confirm the migration in the repo before acting.** The ADR or decision record that retired the
+  old thing is the authority -- not the runbook's prose about it.
+- **Already tombstoned is already correct.** A doc carrying a dated `:::warning` "retired /
+  replaced by ..." callout needs nothing further; don't re-flag it.
+- **Pet names are not stale references.** A live pool, host, or service with an unusual name reads
+  as wrong to anyone who doesn't know the fleet. Check the inventory before "fixing" one.
+- **Leave genuine judgment calls in the doc for a human.** Contradictions you can't resolve from
+  the repo -- a management IP that disagrees with the current subnet, a credential that looks like
+  a vendor default -- stay as an in-doc flag and go in your summary. Don't guess at the answer, and
+  don't copy the specifics anywhere the wiki's own access boundary doesn't already cover.
 
-**Looks-stale-but-isn't -- do NOT "fix":** `voltron` is the live DUB media ZFS pool; `zarkon` is a
-live R720xd. Pet names are legitimate here.
-
-**Open flags left in-doc (need a human):** R720xd iDRAC IPs are `192.168.1.x` while current DUB
-storage is `192.168.5.x` (VLAN renumber vs stale BMC?); SuperMicro GPU Server still has default
-`ADMIN`/`ADMIN` IPMI creds.
-
-## Final tree snapshot (post-curation, 2026-06-27)
-
-```
-Runbooks
-  Claude -> Outline MCP -> {Claude Code, Claude Desktop}
-  Networking -> WireGuard/VPN
-  Infrastructure
-    Docker, AWS, Monitoring, Bootstrapping Nodes, Proxmox,
-    WAF / Edge Security, NUCs Proxmox Install, Proxmox Backup Server
-    File Systems -> {ZFS, Extending an LVM's Size}
-    Services -> {Garage S3 Object Store, Mosquitto}
-    Proxmox Storage & VM Disks -> {Restic}
-  Notifications -> SMTP2GO
-  Applications
-    Paperless, Outline, Arr Clients
-    Deprecated -> {TubeSync, Authentik, WireGuard Portal}
-  Hardware
-    Servers -> {Dell R720xd, Lenovo ThinkPad M93p}
-    GPUs -> {SuperMicro GPU Server, NVIDIA Tesla P40}
-    Personal Devices -> {Kobo, Nelko Label Makers, K39}
-  Home Assistant -> {Living Room Tablet, Two TVs, Rebooting After Power Outages, Devices}
-OMGs (sibling top-level) -> incident docs
-```
+If the fleet has a known set of completed migrations worth tracking across sessions, keep that
+watchlist in the wiki itself or in a private companion skill. It doesn't belong here: it would go
+stale on the next migration, and it would publish the fleet's shape to everyone who reads the
+skill.

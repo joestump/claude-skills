@@ -45,59 +45,13 @@ parent is `#EF4444`. Leave all of this alone.
 
 ---
 
-## Applied snapshot (2026-06-27) -- the scheme as it currently stands
+## Recording the applied scheme
 
-Reuse these so future sessions don't re-derive. Format: `Title  ICON  COLOR`.
+Once a collection is styled, the per-doc icon and color assignments are worth recording so later
+sessions don't re-derive them -- but record them **in the wiki**, not in this skill. A parent
+node's body or a dedicated styling doc inside the collection is the right home: it sits next to
+what it describes, and it inherits the collection's own access boundary.
 
-```
-Claude                       🤖 #6366F1
-  Outline MCP                🔌 #8B5CF6
-    Claude Code              💻 #0EA5E9
-    Claude Desktop           🖥️ #38BDF8
-Networking                   🌐 #3B82F6
-  WireGuard/VPN              🔐 #0891B2
-Infrastructure               🏗️ #22C55E
-  Docker                     🐳 #2496ED
-  AWS                        ☁️ #FF9900
-  File Systems               🗄️ #15803D
-    ZFS                      💽 #0D9488
-    Extending an LVM's Size  📀 #84CC16
-  Services                   🧩 #10B981
-    Garage S3 Object Store   🪣 #EAB308
-    Mosquitto                🦟 #06B6D4
-  Monitoring                 📊 #8B5CF6
-  Bootstrapping Nodes        🚀 #F97316
-  Proxmox                    🧰 #BE123C
-  WAF / Edge Security        🛡️ #DC2626
-  NUCs Proxmox Install       🖥️ #0891B2
-  Proxmox Backup Server      🗃️ #7C3AED
-  Proxmox Storage & VM Disks 💾 #2563EB
-    Restic                   ♻️ #DB2777
-Notifications                🔔 #F59E0B
-  SMTP2GO                    ✉️ #EA580C
-Applications                 🗂️ #A855F7
-  Paperless                  📄 #0284C7
-  Outline                    📖 #0D9488
-  Arr Clients                🍿 #E11D48
-  Deprecated                 ⚠️ #6B7280
-    TubeSync                 ▶️ #EF4444
-    Authentik                🔑 #FB923C
-    WireGuard Portal         🚇 #6D28D9
-Hardware                     🔧 #64748B
-  Servers                    🧱 #475569
-    Dell R720xd              🗄️ #0F766E
-    Lenovo ThinkPad M93p     💻 #B91C1C
-  GPUs                       🧠 #4D7C0F
-    SuperMicro GPU Server    🧊 #1E40AF
-    NVIDIA Tesla P40         ⚙️ #76B900
-  Personal Devices           🎒 #94A3B8
-    Kobo                     📚 #1D4ED8
-    Nelko Label Makers       🏷️ #059669
-    K39                      🎮 #9333EA
-Home Assistant               🏠 #14B8A6
-  Living Room Tablet         📱 #0EA5E9
-  Two TVs                    📺 #8B5CF6
-  Rebooting After Outages    ⚡ #FBBF24
-  Devices                    🔌 #10B981
-OMGs (reserved scheme)       🆘 #EF4444
-```
+A snapshot pasted into the skill goes stale the moment the tree changes, and it publishes the
+shape of a private wiki -- every doc title, including the ones about someone's house -- to
+everyone who can read the skill.
