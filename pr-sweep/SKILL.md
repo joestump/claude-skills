@@ -1,17 +1,18 @@
 ---
 name: pr-sweep
 description: >
-  Sweep Joe's open pull requests across GitHub (github.com/joestump) and Gitea
-  (gitea.stump.rocks) and drive each one toward merge — checking CI, mergeability,
-  and review state, then acting: on PRs the acting account authored it pushes
-  fixes for failing checks and review findings and replies to the threads (but
-  never merges its own work); on PRs authored by someone else it merges the ones
-  that are green, approved, and conflict-free. Use this skill whenever Joe says
-  "sweep my PRs", "sweep my open PRs", "check/work/shepherd my open PRs", "merge
-  my ready PRs", "clear my PR queue", "go through joestump-agent's PRs", or
-  otherwise wants his open pull requests triaged and moved forward. "My" resolves
-  to joestump-agent when `whoami` is joestump-agent, otherwise joestump, and can
-  be overridden with `--username <login>`. Covers both hosts by default.
+  Sweep Joe's open pull requests across GitHub (github.com/joestump) and a
+  self-hosted Gitea instance and drive each one toward merge — checking CI,
+  mergeability, and review state, then acting: on PRs the acting account authored
+  it pushes fixes for failing checks and review findings and replies to the
+  threads (but never merges its own work); on PRs authored by someone else it
+  merges the ones that are green, approved, and conflict-free. Use this skill
+  whenever Joe says "sweep my PRs", "sweep my open PRs", "check/work/shepherd my
+  open PRs", "merge my ready PRs", "clear my PR queue", "go through
+  joestump-agent's PRs", or otherwise wants his open pull requests triaged and
+  moved forward. "My" resolves to joestump-agent when `whoami` is joestump-agent,
+  otherwise joestump, and can be overridden with `--username <login>`. Covers
+  both hosts by default.
 category: Dev
 tags: [github, gitea, pull-requests, review, ci, automation, merge]
 status: stable
