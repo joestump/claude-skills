@@ -20,8 +20,8 @@ Keep the StumpCloud **Runbooks** wiki accurate, well-structured, and consistentl
 repo is the source of truth; Outline summarizes it for humans. This skill runs the same arc every
 time: **discover (read-only) -> propose a plan -> get approval -> execute -> restyle -> verify.**
 
-The collection: **StumpCloud / Runbooks**, id `1eb79152-f92b-4a7f-bb27-b6c009521790` (with `OMGs`
-as a sibling top-level section under the same collection). Always start with
+The collection: **StumpCloud / Runbooks** (with `OMGs` as a sibling top-level section under the
+same collection). Resolve its id with `list_collections` rather than hardcoding one, then
 `list_collection_documents` on it to get the current tree.
 
 House voice for wiki bodies: clear, operational, lightly dry -- but the wiki is reference
@@ -36,12 +36,12 @@ OMGs.
 
 - `list_collection_documents` the Runbooks collection for the live tree.
 - `fetch` each doc you intend to touch and note: current icon/color, ADR/SPEC citations, stale
-  references (decommissioned PDX hosts, retired Authentik/MinIO/Infisical/TubeSync, etc.),
+  references (decommissioned hosts, services replaced by a successor, etc.),
   duplication with siblings, and thin/empty parent bodies.
-- Gather repo ground truth from `/Users/joestump/src/stumpcloud/infra`: `docs/adrs/` (the ADRs the
-  runbooks cite -- verify the claim against the actual file), `decisions/`, `docs/` and
-  `docs-site/` (narrative + user-facing guides), and the inventory (`dub.yaml`, `dtw.yaml`,
-  `pdx.yaml`) + `roles/` for host/service facts.
+- Gather ground truth from the infrastructure repo -- ask the user for the checkout path if it
+  isn't already in context: `docs/adrs/` (the ADRs the runbooks cite -- verify the claim against
+  the actual file), `decisions/`, `docs/` and `docs-site/` (narrative + user-facing guides), and
+  the per-site inventory files + `roles/` for host/service facts.
 - For large trees, fan this out to subagents (one per section) that each return a concise
   per-doc report -- don't read 40 docs inline.
 
@@ -94,5 +94,5 @@ discrepancies corrected, and the final tree (with icons).
   `references/outline-formatting.md` is the canonical Outline markdown/callout cheat-sheet; reuse
   it rather than duplicating. Its severity color scheme is **off-limits** to this skill.
 - `references/styling-conventions.md` -- the domain colors, intra-domain color rule, icon rules.
-- `references/curation-principles.md` -- hierarchy-native structure, repo-wins reconciliation, the
-  read-before-edit / patch discipline, and the known stale-reference watchlist.
+- `references/curation-principles.md` -- hierarchy-native structure, repo-wins reconciliation,
+  the read-before-edit / patch discipline, and how to handle stale references.
