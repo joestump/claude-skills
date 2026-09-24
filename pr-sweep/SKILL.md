@@ -100,9 +100,26 @@ one PR never strands another half-done. Apply this table:
 | Green + approved + mergeable, not draft | Report **ready — awaiting external merge**. Don't merge. | **Merge it.** |
 | Failing CI | Reproduce, **push a fix** to the PR branch, reply on the failing thread. | Report the failure; leave a review noting it. Don't push. |
 | Changes requested / open review findings | **Address them**: push code fixes, then **reply to each thread** saying what you did. | Report; optionally re-review. Don't push. |
-| Conflicts / behind base | Update the branch (rebase/merge base in), push. | Report; you may `update_branch` if the host offers it. |
+| Conflicts / behind base | Ask the **forge** for a **rebase** update (below). Never merge the base in, never rebase-and-force-push locally. | Report it. Don't update-branch a PR you didn't author. |
 | Draft | Leave it — drafts are intentionally not ready. Note it in the summary. | Leave it. |
 | Clearly obsolete / superseded | **Flag it** for Joe with why — do **not** close it. Closing is the grooming skill's job, not this one. | Same — flag, don't close. |
+
+### Bringing a behind PR current
+
+Let the forge rebase it; don't rewrite the branch yourself. Both major forges do
+this server-side, replaying only that PR's own commits onto the new base:
+
+| Forge | Use | Never |
+|-------|-----|-------|
+| Gitea | `POST /repos/{owner}/{repo}/pulls/{n}/update?style=rebase` | `?style=merge` |
+| GitHub | `gh pr update-branch --rebase` | bare `gh pr update-branch`, and the REST `PUT .../update-branch` — both are merge-only |
+
+The merge style adds a `Merge branch 'main'` commit that buries the real diff.
+A local rebase-and-push rewrites a published branch, which drops commits from
+anyone who already fetched it. Expect the approval to be dismissed afterwards if
+the repo dismisses stale approvals — the tree changed, so that is correct.
+
+Only on a PR **you** authored. A PR someone else owns is theirs to bring current.
 
 Two things this skill never does: **merge its own PRs**, and **close anyone's
 PRs**. Both are deliberate — the first is the safety invariant, the second keeps
