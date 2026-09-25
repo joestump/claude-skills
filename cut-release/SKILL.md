@@ -62,8 +62,8 @@ It prints `forge` (`github` | `gitea` | `unknown`), `host`, `owner`, `repo`,
 
 Then read the matching reference and keep it open for Steps 2 and 4:
 
-- **GitHub** → `references/github.md` (`gh` CLI first, REST API as fallback)
-- **Gitea / Forgejo** → `references/gitea.md` (`tea` CLI first, REST API as fallback)
+- **GitHub** → `references/github.md` (`gh` CLI only; `gh api` for raw calls)
+- **Gitea / Forgejo** → `references/gitea.md` (`tea` CLI only; `tea api` for raw calls)
 
 If discovery returns `unknown` and the user can't clarify, stop — don't guess a
 host or push tags into the dark.
@@ -216,9 +216,9 @@ version confirmation are the two non-negotiable checkpoints.
 
 ## Reference files
 
-- `references/github.md` — GitHub via `gh` and the REST API: verify CI, create
+- `references/github.md` — GitHub via `gh` and `gh api`: verify CI, create
   tag + release, generate notes, attach assets, GitHub Enterprise notes.
-- `references/gitea.md` — Gitea/Forgejo via `tea` and the REST API: auth,
+- `references/gitea.md` — Gitea/Forgejo via `tea` and `tea api`: auth,
   verify CI, create tag + release, attach assets.
 - `references/versioning.md` — semver decisions, monorepo per-component tags,
   changelog generation, prerelease handling, and what to do when commits aren't
