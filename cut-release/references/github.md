@@ -1,11 +1,10 @@
 # GitHub: verify CI, tag, and cut a release
 
-Use the `gh` CLI when it's authenticated (`gh auth status`); fall back to the
-REST API with `curl` + a token when `gh` isn't available. `gh` reads
-`GH_TOKEN`/`GITHUB_TOKEN` and respects `GH_HOST` for GitHub Enterprise. For raw
-API calls, `api_base` is `https://api.github.com` (github.com) or
-`https://<host>/api/v3` (Enterprise), with header `Authorization: Bearer <token>`
-and `Accept: application/vnd.github+json`.
+Every call goes through the `gh` CLI, with `--repo OWNER/REPO` passed
+explicitly; `gh api` covers anything without a subcommand. Check
+`gh auth status` first — if it is not authenticated, stop and ask the user to
+run `gh auth login` rather than falling back to `curl` with a token. `gh`
+respects `GH_HOST` for GitHub Enterprise.
 
 Throughout, `OWNER/REPO` and `SHA` come from `scripts/detect-forge.sh` and Step 1.
 
@@ -43,11 +42,10 @@ decide. If anything failed, stop and link it:
 gh run view <run-id> --log-failed        # surface the failing step
 ```
 
-Raw API equivalent:
+The combined status, via `gh api`:
 
 ```bash
-curl -fsS -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-  "$API_BASE/repos/OWNER/REPO/commits/SHA/status" | jq -r '.state'
+gh api repos/OWNER/REPO/commits/SHA/status --jq '.state'
 ```
 
 ## Create the tag (if not letting the release create it)
@@ -95,31 +93,19 @@ gh release create "TAG" --target SHA --title "TITLE" --generate-notes \
   ./dist/app-linux-amd64 ./dist/app-darwin-arm64
 ```
 
-Raw API (creates the tag from `target_commitish` if the tag doesn't exist):
+The same through `gh api` (creates the tag from `target_commitish` if the tag
+doesn't exist):
 
 ```bash
-curl -fsS -X POST \
-  -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
-  "$API_BASE/repos/OWNER/REPO/releases" \
-  -d '{
-        "tag_name": "TAG",
-        "target_commitish": "SHA",
-        "name": "TITLE",
-        "generate_release_notes": true,
-        "draft": false,
-        "prerelease": false
-      }'
+gh api -X POST repos/OWNER/REPO/releases \
+  -f tag_name="TAG" -f target_commitish="SHA" -f name="TITLE" \
+  -F generate_release_notes=true -F draft=false -F prerelease=false
 ```
 
-Upload an asset to an existing release via API:
+Upload an asset to an existing release:
 
 ```bash
-RELEASE_ID=$(gh api "repos/OWNER/REPO/releases/tags/TAG" --jq '.id')
-curl -fsS -X POST \
-  -H "Authorization: Bearer $GH_TOKEN" \
-  -H "Content-Type: application/octet-stream" \
-  "https://uploads.github.com/repos/OWNER/REPO/releases/$RELEASE_ID/assets?name=app-linux-amd64" \
-  --data-binary @./dist/app-linux-amd64
+gh release upload "TAG" ./dist/app-linux-amd64 --repo OWNER/REPO
 ```
 
 ## Verify

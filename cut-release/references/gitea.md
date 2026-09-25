@@ -4,28 +4,32 @@ This path covers both **Gitea** and **Forgejo** — Forgejo is a Gitea fork and
 its REST API (`/api/v1`) and `tea` CLI are compatible. `api_base` from
 `scripts/detect-forge.sh` is `https://<host>/api/v1`.
 
-Use the `tea` CLI when it's logged in (`tea login list`); otherwise use the REST
-API with `curl`. Both `OWNER/REPO`, `SHA`, and `API_BASE` come from discovery.
+Every call goes through the `tea` CLI: a subcommand where one exists, `tea api`
+(paths relative to `/api/v1/`) for the rest. Do not `curl` the API with a token
+from the environment — agent shells usually have none, and a write made with an
+empty token fails without anyone noticing. `OWNER/REPO` and `SHA` come from
+discovery.
 
 ## Auth
 
-Gitea doesn't ship with ambient auth like `gh`, so resolve a token first:
-
-1. **Env var** — `GITEA_TOKEN` (or `FORGEJO_TOKEN`). Check `env | grep -iE 'gitea|forgejo'`.
-2. **`tea` config** — if `tea login list` shows a login for this host, `tea`
-   commands work without a token. Reuse it.
-3. **Secrets manager** — check the project's `CLAUDE.md`/`.env.example` for a kv
-   path (the same resolution order other skills in this repo use).
-4. **Ask the user** — never guess or construct a token.
-
-Create a token if needed: Gitea → Settings → Applications → Generate Token, with
-at least `write:repository` scope. API auth header: `Authorization: token <TOKEN>`
-(note: `token`, not `Bearer`).
+`tea` keeps its own credential per login. Find the login for this host:
 
 ```bash
-GITEA="$API_BASE"          # e.g. https://gitea.example.com/api/v1
-AUTH="Authorization: token $GITEA_TOKEN"
+tea logins list          # the NAME whose URL matches the host
+LOGIN=<that name>
 ```
+
+Pass `--login "$LOGIN" --repo OWNER/REPO` on every command rather than trusting
+the checkout. If no login matches, stop and ask the user to run `tea login add`
+for the host — never guess, construct, or paste a token.
+
+Two `tea` traps:
+
+- **`tea api` exits 0 on an HTTP error** (a 404, for one). Read the body, or
+  read the object back; the exit code proves nothing.
+- **Never `tea --debug` or `tea api -i`** in a session that is recorded — both
+  dump raw HTTP detail into the transcript, and debug output can carry the
+  auth header.
 
 ## Verify CI
 
@@ -33,21 +37,22 @@ Gitea Actions (and external CI) report a **combined commit status**. Require it
 green before releasing:
 
 ```bash
-curl -fsS -H "$AUTH" "$GITEA/repos/OWNER/REPO/commits/SHA/status" \
-  | jq -r '.state'        # success | pending | failure | warning | error
+tea api --login "$LOGIN" repos/OWNER/REPO/commits/SHA/status \
+  | jq -r '.state // .message'   # success | pending | failure | warning | error
 ```
 
 For the per-check breakdown (to name the failing one):
 
 ```bash
-curl -fsS -H "$AUTH" "$GITEA/repos/OWNER/REPO/commits/SHA/statuses" \
+tea api --login "$LOGIN" repos/OWNER/REPO/commits/SHA/statuses \
   | jq -r '.[] | "\(.status)\t\(.context)\t\(.target_url)"'
 ```
 
-With `tea` (if the repo uses Gitea Actions):
+If the repo uses Gitea Actions, the runs and a failing job's log:
 
 ```bash
-tea actions runs --repo OWNER/REPO     # eyeball recent runs and their status
+tea actions runs ls --login "$LOGIN" --repo OWNER/REPO --limit 10
+tea actions runs logs --login "$LOGIN" --repo OWNER/REPO --job <job-id> <run-id>
 ```
 
 Decision rule is identical to the GitHub path: proceed only on `success`. On
@@ -69,42 +74,23 @@ Otherwise the release call below will create the tag from `target` for you.
 
 ## Create the release
 
-The Gitea API creates the tag from `target` if it doesn't already exist:
+Gitea creates the tag from `--target` if it doesn't already exist. Gitea has no
+server-side "generate notes from PRs" flag, so build the changelog yourself (see
+`references/versioning.md` → "Changelog") and pass it as a notes file:
 
 ```bash
-curl -fsS -X POST -H "$AUTH" -H "Content-Type: application/json" \
-  "$GITEA/repos/OWNER/REPO/releases" \
-  -d '{
-        "tag_name": "TAG",
-        "target_commitish": "SHA",
-        "name": "TITLE",
-        "body": "RELEASE NOTES (markdown)",
-        "draft": false,
-        "prerelease": false
-      }'
-```
-
-Gitea has no server-side "generate notes from PRs" flag, so build the changelog
-yourself (see `references/versioning.md` → "Changelog") and pass it as `body`.
-
-With `tea`:
-
-```bash
-tea release create --repo OWNER/REPO \
+tea releases create --login "$LOGIN" --repo OWNER/REPO \
   --tag "TAG" --target SHA \
   --title "TITLE" \
-  --note "RELEASE NOTES" \
-  # --draft / --prerelease as needed \
-  # --asset ./dist/app-linux-amd64 --asset ./dist/app-darwin-arm64
+  --note-file ./RELEASE_NOTES.md
+  # add --draft / --prerelease as needed,
+  # and --asset ./dist/app-linux-amd64 (repeatable) to attach binaries
 ```
 
-Attach an asset to an existing release via API:
+Attach an asset to an existing release:
 
 ```bash
-RELEASE_ID=$(curl -fsS -H "$AUTH" "$GITEA/repos/OWNER/REPO/releases/tags/TAG" | jq -r '.id')
-curl -fsS -X POST -H "$AUTH" \
-  -F "attachment=@./dist/app-linux-amd64" \
-  "$GITEA/repos/OWNER/REPO/releases/$RELEASE_ID/assets?name=app-linux-amd64"
+tea releases assets create --login "$LOGIN" --repo OWNER/REPO "TAG" ./dist/app-linux-amd64
 ```
 
 ## Verify
@@ -112,10 +98,11 @@ curl -fsS -X POST -H "$AUTH" \
 Confirm the Release exists and report its URL:
 
 ```bash
-curl -fsS -H "$AUTH" "$GITEA/repos/OWNER/REPO/releases/tags/TAG" \
-  | jq -r '{name, tag_name, draft, prerelease, html_url, published_at}'
+tea api --login "$LOGIN" repos/OWNER/REPO/releases/tags/TAG \
+  | jq -r '{name, tag_name, draft, prerelease, html_url, published_at, message}'
 ```
 
-`html_url` is the link to give the user. If automation cut the release, check
-`tea actions runs` (or the repo's Actions tab) until the run finishes, then
+`html_url` is the link to give the user; a `message` of `not found` means no
+release, whatever the exit code said. If automation cut the release, check
+`tea actions runs ls` (or the repo's Actions tab) until the run finishes, then
 re-query the release.

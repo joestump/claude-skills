@@ -62,15 +62,29 @@ Line 1 is a JSON header — `{host, target_user, acting_user, mode}` — and the
 is the `gh search prs` array. Read the header: it tells you whether GitHub is in
 `self` or `merge` mode for this run.
 
-For **Gitea**, determine the acting identity with the Gitea MCP `get_me` tool and
-compare its login to `target_user` the same way (equal → `self`, different →
-`merge`). Find the target's open Gitea PRs with `mcp__gitea__search_issues`
-(type `pulls`, state `open`, filtered to the target as poster) — or, if that's
-awkward, enumerate the handful of repos the target actually opens PRs against
-(`stumpcloud/*`, `joestump/*`) with `list_pull_requests` and keep the ones the
-target authored. The two hosts can legitimately be in *different* modes if the
-Gitea token and the `gh` token are different accounts — evaluate each host on its
-own.
+For **Gitea**, every call goes through `tea` with the login passed explicitly
+(`tea logins list` names it; below it is `gitea.stump.rocks`). Never `curl` with
+`$GITEA_TOKEN` — agent shells don't carry it — and never a Gitea MCP. `tea api`
+exits 0 on an HTTP error, so read the body.
+
+Determine the acting identity and compare it to `target_user` the same way
+(equal → `self`, different → `merge`):
+
+```bash
+tea api --login gitea.stump.rocks user | jq -r .login
+```
+
+Find the target's open Gitea PRs. In `self` mode one search covers every repo;
+otherwise list the handful of repos the target opens PRs against (`stumpcloud/*`,
+`joestump/*`, `stump.wtf/*`) filtered to the target as poster:
+
+```bash
+tea api --login gitea.stump.rocks 'repos/issues/search?type=pulls&state=open&created=true&limit=50'
+tea api --login gitea.stump.rocks 'repos/<owner>/<repo>/pulls?state=open&poster=<target>&limit=50'
+```
+
+The two hosts can legitimately be in *different* modes if the tea login and the
+`gh` login are different accounts — evaluate each host on its own.
 
 If a host has no credentials configured, say so and sweep the other host rather
 than failing the whole run.
@@ -81,12 +95,15 @@ For every open PR in the target set, collect enough to decide:
 
 - **CI / checks** — passing, failing, pending, or none.
   GitHub: `gh pr checks <n> -R <owner/repo>` or `gh pr view <n> -R <repo> --json statusCheckRollup`.
-  Gitea: `mcp__gitea__actions_run_read` for the head SHA (Gitea Actions can be
-  flaky to query — if you can't get status, say "CI unknown" rather than guessing).
+  Gitea: `tea api --login gitea.stump.rocks repos/<owner>/<repo>/commits/<head-sha>/status`
+  and read `.state` (Gitea Actions can be flaky to query — if you can't get status,
+  say "CI unknown" rather than guessing).
 - **Mergeability** — clean, or conflicts / behind base.
-  GitHub: `--json mergeable,mergeStateStatus`. Gitea: `pull_request_read` `.mergeable`.
+  GitHub: `--json mergeable,mergeStateStatus`. Gitea: `.mergeable` from
+  `tea api --login gitea.stump.rocks repos/<owner>/<repo>/pulls/<n>`.
 - **Review state** — approved, changes requested, or no review yet.
-  GitHub: `--json reviewDecision,reviews`. Gitea: read the PR's reviews.
+  GitHub: `--json reviewDecision,reviews`. Gitea:
+  `tea api --login gitea.stump.rocks repos/<owner>/<repo>/pulls/<n>/reviews`.
 - **Open threads / findings** — unresolved review comments or review-bot findings
   that ask for a change. These are what `self` mode acts on.
 
@@ -164,8 +181,9 @@ isn't a draft. Respect the repo's merge style — if unsure, a plain merge commi
 is the safe default.
 
 - GitHub: `gh pr merge <n> -R <owner/repo> --merge` (or the repo's preferred
-  `--squash`/`--rebase`), or `mcp__github__merge_pull_request`.
-- Gitea: `mcp__gitea__pull_request_write` method `merge`.
+  `--squash`/`--rebase`).
+- Gitea: `tea pulls merge --login gitea.stump.rocks --repo <owner/repo> --style <merge|squash|rebase> <n>`,
+  then re-read the PR and confirm `.merged` — the exit code does not prove it.
 
 If a PR *looks* ready but something's off (branch protection, a required check
 still pending), don't force it — report the blocker.
